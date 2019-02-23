@@ -8,22 +8,10 @@
 # LDFLAGS	linker flags for linking all binaries
 # ERL_LDFLAGS	additional linker flags for projects referencing Erlang libraries
 
-LDFLAGS +=
-CFLAGS ?= -O2 -Wall -Wextra -Wno-unused-parameter
-CFLAGS += -std=c99 -D_GNU_SOURCE
-CC ?= $(CROSSCOMPILER)gcc
-
+CFLAGS= -g
 #CFLAGS += -DDEBUG
 
 SRC=$(wildcard src/*.cpp)
-
-
-# -lrt is needed for clock_gettime() on linux with glibc before version 2.17
-# (for example raspbian wheezy)
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Linux)
-  LDFLAGS += -lrt
-endif
 
 CFLAGS = -I"/usr/local/include/"
 ERL_ROOT_DIR = $(ERLHOME)
@@ -42,23 +30,10 @@ endif
 
 # Set Erlang-specific compile and linker flags
 # ERL_CFLAGS ?= -I$(ERL_EI_INCLUDE_DIR) -L$(/usr/lib)
-ERL_CFLAGS ?= -I$(ERL_EI_INCLUDE_DIR)
-ERL_LDFLAGS ?= -L$(ERL_EI_LIBDIR) -lei 
-
-# ERL_LDFLAGS += -lc++
-ERL_CFLAGS += -I$(/usr/local/lib/erlang/usr/include)
-
-
-# If compiling on OSX and not crosscompiling, include CoreFoundation and IOKit
-ifeq ($(CROSSCOMPILE),)
-ifeq ($(shell uname),Darwin)
-LDFLAGS += -framework CoreFoundation -framework IOKit
-endif
-endif
 
 LIBS_opencv = -lopencv_core -lopencv_highgui -lopencv_imgproc -lopencv_video -lopencv_objdetect -lopencv_imgcodecs
 
-
+HEADER_FILES = src
 
 OBJ=$(SRC:.cpp=.o)
 
@@ -66,14 +41,11 @@ OBJ=$(SRC:.cpp=.o)
 
 all: src priv priv/analyzer
 				
-%.o: %.cpp
-	$(CC) -c $(ERL_CFLAGS) $(CFLAGS) -o $@ $<
-
 priv:
 	mkdir -p priv
 
 priv/analyzer: $(OBJ)
-	$(CC) $^ $(ERL_LDFLAGS) $(LDFLAGS) -o $@ $(LIBS_opencv)
+	$(CC) -I $(HEADER_FILES) -o $@ $(LIBS_opencv)
 
 clean:
 	rm -f priv/analyzer$(EXEEXT) src/*.o src/ei_copy/*.o
